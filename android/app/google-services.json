@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "57925845223",
+    "firebase_url": "https://mountlock-e29ff.firebaseio.com",
+    "project_id": "mountlock-e29ff",
+    "storage_bucket": "mountlock-e29ff.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:57925845223:android:4d69dbf937d30df506e242",
+        "android_client_info": {
+          "package_name": "com.example.mountlocks"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "57925845223-r9gfl357gphck64fq96g9lura3grv9do.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeKxyXwACZTFTF0n-k1EafkJxOXPEqxZM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "57925845223-r9gfl357gphck64fq96g9lura3grv9do.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "57925845223-h75m6nkjgocumvjn0dphmfh8t0h5juvj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "isabel.ScannerApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
