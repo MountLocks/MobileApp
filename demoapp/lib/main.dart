@@ -73,6 +73,11 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
   Future<void> initStateAsync() async {
     await assignedNumbersLoad();
     await _bleManager.createClient();
+    await for (BluetoothState state in _bleManager.observeBluetoothState()) {
+      if (state == BluetoothState.POWERED_ON) {
+        break;
+      }
+    }
     _startScan();
   }
 
