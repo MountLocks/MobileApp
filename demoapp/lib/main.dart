@@ -45,6 +45,7 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
   Connection _connection;
   StreamSubscription<PeripheralConnectionState> _connSub;
   Timer _cleanupTimer;
+  String _deviceName = "Bluefruit52";
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -105,18 +106,19 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
     _bleManager
         .startPeripheralScan(scanMode: ScanMode.balanced)
         .listen((ScanResult result) {
-      print(result);
-      BleDevice device = BleDevice(result, DateTime.now());
-      int index = _devices.indexWhere((dynamic _device) =>
-          _device.result.peripheral.identifier ==
-          device.result.peripheral.identifier);
+      if (result.peripheral.name == _deviceName) {
+        BleDevice device = BleDevice(result, DateTime.now());
+        int index = _devices.indexWhere((dynamic _device) =>
+            _device.result.peripheral.identifier ==
+            device.result.peripheral.identifier);
 
-      setState(() {
-        if (index < 0)
-          _devices.add(device);
-        else
-          _devices[index] = device;
-      });
+        setState(() {
+          if (index < 0)
+            _devices.add(device);
+          else
+            _devices[index] = device;
+        });
+      }
     });
   }
 
@@ -163,15 +165,24 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
       setState(() => _connection = Connection.discovering);
       await result.peripheral.discoverAllServicesAndCharacteristics();
 
-      Navigator.pushNamed(context, '/srvc', arguments: result)
-          .whenComplete(() async {
-        _connSub?.cancel();
-        if (await result.peripheral.isConnected()) {
-          result.peripheral.disconnectOrCancelConnection();
+      for (Service service in await result.peripheral.services()) {
+        if (service.uuid.contains('ca9e')) {
+          for (Characteristic characteristic
+              in await service.characteristics()) {
+            if (characteristic.uuid.contains('6e400002')) {
+              Navigator.pushNamed(context, '/chrc',
+                  arguments: [result, characteristic]).whenComplete(() async {
+                _connSub?.cancel();
+                if (await result.peripheral.isConnected()) {
+                  result.peripheral.disconnectOrCancelConnection();
+                }
+                setState(() => _connection = null);
+                _startScan();
+              });
+            }
+          }
         }
-        setState(() => _connection = null);
-        _startScan();
-      });
+      }
     } on BleError {
       _connSub?.cancel();
       setState(() => _connection = null);
