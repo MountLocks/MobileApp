@@ -24,7 +24,7 @@ class _SrvcState extends State<Srvc> {
     super.didChangeDependencies();
   }
 
-  void _goto_character(Characteristic chrc) {
+  void _gotoCharacter(Characteristic chrc) {
     Navigator.pushNamed(context, '/chrc', arguments: [_result, chrc]);
   }
 
@@ -34,21 +34,21 @@ class _SrvcState extends State<Srvc> {
       appBar: AppBar(
         title: Text(_result.peripheral.name ?? _result.peripheral.identifier),
       ),
-      body: build_list(),
+      body: buildList(),
     );
   }
 
-  Widget build_list() {
+  Widget buildList() {
     return ListView.builder(
       itemCount: _services.length + 1,
-      itemBuilder: build_list_item,
+      itemBuilder: buildListItem,
     );
   }
 
-  Widget build_list_item(BuildContext context, int index) {
+  Widget buildListItem(BuildContext context, int index) {
     if (index == 0) return infobar(context, 'Services & characteristics');
 
-    String service = service_lookup(_services.keys.elementAt(index - 1).uuid);
+    String service = serviceLookup(_services.keys.elementAt(index - 1).uuid);
 
     List<ListTile> tiles = [
       ListTile(
@@ -59,7 +59,7 @@ class _SrvcState extends State<Srvc> {
     ];
 
     for (Characteristic chrc in _services.values.elementAt(index - 1)) {
-      String characteristic = characteristic_lookup(chrc.uuid);
+      String characteristic = characteristicLookup(chrc.uuid);
       characteristic = characteristic != null ? characteristic + '\n' : '';
 
       List<String> props = [];
@@ -76,7 +76,7 @@ class _SrvcState extends State<Srvc> {
         trailing: Icon(Icons.chevron_right),
         isThreeLine: characteristic.length > 0,
         contentPadding: EdgeInsets.only(left: 28, right: 16),
-        onTap: () => _goto_character(chrc),
+        onTap: () => _gotoCharacter(chrc),
       ));
     }
 

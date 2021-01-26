@@ -16,11 +16,11 @@ class Chrc extends StatefulWidget {
 class _ChrcState extends State<Chrc> {
   ScanResult _result;
   Characteristic _chrc;
-  DataType _data_type = DataType.hex;
-  StreamSubscription<Uint8List> _notify_sub;
-  TextEditingController _write_ctrl = TextEditingController();
-  TextEditingController _read_ctrl = TextEditingController();
-  TextEditingController _notify_ctrl = TextEditingController();
+  DataType _dataType = DataType.hex;
+  StreamSubscription<Uint8List> _notifySub;
+  TextEditingController _writeCtrl = TextEditingController();
+  TextEditingController _readCtrl = TextEditingController();
+  TextEditingController _notifyCtrl = TextEditingController();
 
   @override
   Future<void> didChangeDependencies() async {
@@ -31,35 +31,35 @@ class _ChrcState extends State<Chrc> {
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       setState(
-          () => _data_type = DataType.values[prefs.getInt('data_type') ?? 0]);
+          () => _dataType = DataType.values[prefs.getInt('data_type') ?? 0]);
     }
     super.didChangeDependencies();
   }
 
   @override
   Future<void> dispose() async {
-    _notify_sub?.cancel();
+    _notifySub?.cancel();
     super.dispose();
   }
 
-  Future<void> _on_data_type(DataType value) async {
-    setState(() => _data_type = value);
+  Future<void> _onDataType(DataType value) async {
+    setState(() => _dataType = value);
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setInt('data_type', value.index);
   }
 
-  Future<void> _on_write() async {
+  Future<void> _onWrite() async {
     Uint8List data;
 
-    if (_data_type == DataType.hex) {
-      List<int> hex_list = [];
-      for (int i = 0; i < _write_ctrl.text.length; i += 3) {
-        hex_list.add(int.parse(_write_ctrl.text[i] + _write_ctrl.text[i + 1],
-            radix: 16));
+    if (_dataType == DataType.hex) {
+      List<int> hexList = [];
+      for (int i = 0; i < _writeCtrl.text.length; i += 3) {
+        hexList.add(
+            int.parse(_writeCtrl.text[i] + _writeCtrl.text[i + 1], radix: 16));
       }
-      data = Uint8List.fromList(hex_list);
+      data = Uint8List.fromList(hexList);
     } else {
-      data = Uint8List.fromList(_write_ctrl.text.codeUnits);
+      data = Uint8List.fromList(_writeCtrl.text.codeUnits);
     }
 
     if (data.length > 0) {
@@ -68,41 +68,41 @@ class _ChrcState extends State<Chrc> {
     }
   }
 
-  Future<void> _on_read() async {
+  Future<void> _onRead() async {
     CharacteristicWithValue data = await _result.peripheral
         .readCharacteristic(_chrc.service.uuid, _chrc.uuid);
 
-    if (_data_type == DataType.hex) {
+    if (_dataType == DataType.hex) {
       setState(() {
-        _read_ctrl.text = '';
+        _readCtrl.text = '';
         for (int hex in data.value) {
-          _read_ctrl.text += hex.toRadixString(16).padLeft(2, '0').padRight(3);
+          _readCtrl.text += hex.toRadixString(16).padLeft(2, '0').padRight(3);
         }
       });
     } else {
-      setState(() => _read_ctrl.text = String.fromCharCodes(data.value));
+      setState(() => _readCtrl.text = String.fromCharCodes(data.value));
     }
   }
 
-  Future<void> _on_notify() async {
-    if (_notify_sub == null) {
-      _notify_sub = _chrc.monitor().listen((Uint8List data) {
-        if (_data_type == DataType.hex) {
+  Future<void> _onNotify() async {
+    if (_notifySub == null) {
+      _notifySub = _chrc.monitor().listen((Uint8List data) {
+        if (_dataType == DataType.hex) {
           setState(() {
-            _notify_ctrl.text = '';
+            _notifyCtrl.text = '';
             for (int hex in data) {
-              _notify_ctrl.text +=
+              _notifyCtrl.text +=
                   hex.toRadixString(16).padLeft(2, '0').padRight(3);
             }
           });
         } else {
-          setState(() => _notify_ctrl.text = String.fromCharCodes(data));
+          setState(() => _notifyCtrl.text = String.fromCharCodes(data));
         }
       });
       setState(() => null);
     } else {
-      await _notify_sub.cancel();
-      setState(() => _notify_sub = null);
+      await _notifySub.cancel();
+      setState(() => _notifySub = null);
     }
   }
 
@@ -112,23 +112,23 @@ class _ChrcState extends State<Chrc> {
       appBar: AppBar(
         title: Text(_result.peripheral.name ?? _result.peripheral.identifier),
       ),
-      body: build_body(),
+      body: buildBody(),
     );
   }
 
-  Widget build_body() {
-    String service = service_lookup(_chrc.service.uuid);
+  Widget buildBody() {
+    String service = serviceLookup(_chrc.service.uuid);
     service = service != null ? '\n' + service : '';
-    String characteristic = characteristic_lookup(_chrc.uuid);
+    String characteristic = characteristicLookup(_chrc.uuid);
     characteristic = characteristic != null ? '\n' + characteristic : '';
 
     return Column(children: [
-      build_switches(),
+      buildSwitches(),
       (_chrc.isWritableWithResponse || _chrc.isWritableWithoutResponse)
-          ? build_write()
+          ? buildWrite()
           : SizedBox(),
-      _chrc.isReadable ? build_read() : SizedBox(),
-      (_chrc.isNotifiable || _chrc.isIndicatable) ? build_notify() : SizedBox(),
+      _chrc.isReadable ? buildRead() : SizedBox(),
+      (_chrc.isNotifiable || _chrc.isIndicatable) ? buildNotify() : SizedBox(),
       Expanded(child: SizedBox()),
       Divider(height: 0),
       Card(
@@ -142,12 +142,12 @@ class _ChrcState extends State<Chrc> {
     ]);
   }
 
-  Widget build_switches() {
+  Widget buildSwitches() {
     return Card(
       child: Row(
         children: [
-          build_switch('Hex', DataType.hex),
-          build_switch('String', DataType.string),
+          buildSwitch('Hex', DataType.hex),
+          buildSwitch('String', DataType.string),
         ],
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       ),
@@ -157,37 +157,37 @@ class _ChrcState extends State<Chrc> {
     );
   }
 
-  Widget build_switch(String label, DataType value) {
+  Widget buildSwitch(String label, DataType value) {
     return FlatButton(
       child: Row(children: [
         Radio(
           value: value,
-          groupValue: _data_type,
-          onChanged: _on_data_type,
+          groupValue: _dataType,
+          onChanged: _onDataType,
         ),
         Text(label, style: TextStyle(fontSize: 16)),
       ]),
       padding: EdgeInsets.only(right: 16),
-      onPressed: () => _on_data_type(value),
+      onPressed: () => _onDataType(value),
     );
   }
 
-  Widget build_write() {
+  Widget buildWrite() {
     return Card(
       child: Padding(
         child: Row(
           children: [
             Expanded(
                 child: TextField(
-              controller: _write_ctrl,
+              controller: _writeCtrl,
               style: TextStyle(fontFamily: 'monospace'),
-              inputFormatters: [HexFormatter(_data_type)],
+              inputFormatters: [HexFormatter(_dataType)],
             )),
             SizedBox(width: 12),
             RaisedButton(
               child: Text('Write'),
               textColor: Theme.of(context).textTheme.button.color,
-              onPressed: _on_write,
+              onPressed: _onWrite,
             ),
           ],
         ),
@@ -197,7 +197,7 @@ class _ChrcState extends State<Chrc> {
     );
   }
 
-  Widget build_read() {
+  Widget buildRead() {
     return Card(
       child: Padding(
         child: Row(
@@ -205,12 +205,12 @@ class _ChrcState extends State<Chrc> {
             RaisedButton(
               child: Text('Read'),
               textColor: Theme.of(context).textTheme.button.color,
-              onPressed: _on_read,
+              onPressed: _onRead,
             ),
             SizedBox(width: 12),
             Expanded(
                 child: TextField(
-              controller: _read_ctrl,
+              controller: _readCtrl,
               readOnly: true,
               style: TextStyle(fontFamily: 'monospace'),
             )),
@@ -222,7 +222,7 @@ class _ChrcState extends State<Chrc> {
     );
   }
 
-  Widget build_notify() {
+  Widget buildNotify() {
     return Card(
       child: Padding(
         child: Row(
@@ -230,13 +230,13 @@ class _ChrcState extends State<Chrc> {
             RaisedButton(
               child: Text('Subscribe'),
               textColor: Theme.of(context).textTheme.button.color,
-              color: _notify_sub != null ? Colors.indigoAccent[400] : null,
-              onPressed: _on_notify,
+              color: _notifySub != null ? Colors.indigoAccent[400] : null,
+              onPressed: _onNotify,
             ),
             SizedBox(width: 12),
             Expanded(
                 child: TextField(
-              controller: _notify_ctrl,
+              controller: _notifyCtrl,
               readOnly: true,
               style: TextStyle(fontFamily: 'monospace'),
             )),

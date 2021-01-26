@@ -29,7 +29,7 @@ class App extends StatelessWidget {
         '/srvc': (BuildContext context) => Srvc(),
         '/chrc': (BuildContext context) => Chrc(),
       },
-      theme: app_theme(),
+      theme: appTheme(),
     );
   }
 }
@@ -42,19 +42,19 @@ class Main extends StatefulWidget {
 class _MainState extends State<Main> with WidgetsBindingObserver {
   BleManager _bleManager = BleManager();
   List<BleDevice> _devices = [];
-  Connection _connection = null;
-  StreamSubscription<PeripheralConnectionState> _conn_sub;
-  Timer _cleanup_timer;
+  Connection _connection;
+  StreamSubscription<PeripheralConnectionState> _connSub;
+  Timer _cleanupTimer;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (ModalRoute.of(context).isCurrent) {
       switch (state) {
         case AppLifecycleState.paused:
-          _stop_scan();
+          _stopScan();
           break;
         case AppLifecycleState.resumed:
-          _start_scan();
+          _startScan();
           break;
         case AppLifecycleState.inactive:
         case AppLifecycleState.detached:
@@ -70,20 +70,20 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
   }
 
   Future<void> initStateAsync() async {
-    await assigned_numbers_load();
+    await assignedNumbersLoad();
     await _bleManager.createClient();
-    _start_scan();
+    _startScan();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _stop_scan();
+    _stopScan();
     _bleManager.destroyClient();
     super.dispose();
   }
 
-  Future<void> _start_scan() async {
+  Future<void> _startScan() async {
     if (Platform.isAndroid) {
       if (await _bleManager.bluetoothState() == BluetoothState.POWERED_OFF) {
         await _bleManager.enableRadio();
@@ -100,7 +100,7 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
         }
       }
 
-      _cleanup_timer = Timer.periodic(Duration(seconds: 2), _cleanup);
+      _cleanupTimer = Timer.periodic(Duration(seconds: 2), _cleanup);
     }
 
     _bleManager
@@ -128,30 +128,30 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _stop_scan() async {
-    await _cleanup_timer?.cancel();
+  Future<void> _stopScan() async {
+    _cleanupTimer?.cancel();
     await _bleManager.stopPeripheralScan();
     setState(() => _devices.clear());
   }
 
-  Future<void> _restart_scan() async {
+  Future<void> _restartScan() async {
     if (Platform.isAndroid) {
       setState(() => _devices.clear());
     } else {
-      await _stop_scan();
-      _start_scan();
+      await _stopScan();
+      _startScan();
     }
   }
 
-  Future<void> _goto_device(int index) async {
+  Future<void> _gotoDevice(int index) async {
     ScanResult result = _devices[index].result;
-    _stop_scan();
+    _stopScan();
 
     try {
       setState(() => _connection = Connection.connecting);
       await result.peripheral
           .connect(refreshGatt: true, timeout: Duration(seconds: 15));
-      _conn_sub = result.peripheral
+      _connSub = result.peripheral
           .observeConnectionState(completeOnDisconnect: true)
           .listen((PeripheralConnectionState state) {
         if (state == PeripheralConnectionState.disconnected) {
@@ -165,17 +165,17 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
 
       Navigator.pushNamed(context, '/srvc', arguments: result)
           .whenComplete(() async {
-        _conn_sub?.cancel();
+        _connSub?.cancel();
         if (await result.peripheral.isConnected()) {
           result.peripheral.disconnectOrCancelConnection();
         }
         setState(() => _connection = null);
-        _start_scan();
+        _startScan();
       });
     } on BleError {
-      _conn_sub?.cancel();
+      _connSub?.cancel();
       setState(() => _connection = null);
-      _start_scan();
+      _startScan();
     }
   }
 
@@ -187,15 +187,15 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
-            onPressed: _connection == null ? _restart_scan : null,
+            onPressed: _connection == null ? _restartScan : null,
           )
         ],
       ),
-      body: build_body(),
+      body: buildBody(),
     );
   }
 
-  Widget build_body() {
+  Widget buildBody() {
     if (_connection != null) {
       switch (_connection) {
         case Connection.connecting:
@@ -204,11 +204,11 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
           return loader('Connecting ...', 'Wait while discovering services');
       }
     }
-    if (_devices.length == 0) return build_intro();
-    return build_list();
+    if (_devices.length == 0) return buildIntro();
+    return buildList();
   }
 
-  Widget build_intro() {
+  Widget buildIntro() {
     final screen = MediaQuery.of(context).size;
 
     return Column(
@@ -264,23 +264,23 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
     );
   }
 
-  Widget build_list() {
+  Widget buildList() {
     return RefreshIndicator(
       child: ListView.separated(
         itemCount: _devices.length + 1,
-        itemBuilder: build_list_item,
+        itemBuilder: buildListItem,
         separatorBuilder: (BuildContext context, int index) =>
             Divider(height: 0),
       ),
-      onRefresh: _restart_scan,
+      onRefresh: _restartScan,
     );
   }
 
-  Widget build_list_item(BuildContext context, int index) {
+  Widget buildListItem(BuildContext context, int index) {
     if (index == 0) return infobar(context, 'BLE devices');
 
     ScanResult result = _devices[index - 1].result;
-    String vendor = vendor_loopup(result.advertisementData.manufacturerData);
+    String vendor = vendorLookup(result.advertisementData.manufacturerData);
     vendor = vendor != null ? '\n' + vendor : '';
 
     return Card(
@@ -301,7 +301,7 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
           mainAxisAlignment: MainAxisAlignment.center,
         ),
         isThreeLine: vendor.length > 0,
-        onTap: () => _goto_device(index - 1),
+        onTap: () => _gotoDevice(index - 1),
       ),
       margin: EdgeInsets.all(0),
       shape: RoundedRectangleBorder(),

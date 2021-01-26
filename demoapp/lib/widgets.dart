@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 enum DataType { hex, string }
 
-ThemeData app_theme() {
+ThemeData appTheme() {
   return ThemeData(
     brightness: Brightness.light,
     primarySwatch: Colors.indigo,
@@ -55,12 +55,12 @@ Widget loader(String title, String subtitle) {
 class HexFormatter extends TextInputFormatter {
   RegExp filter = RegExp(r"[^0-9a-fA-F]+");
   RegExp hexpair = RegExp(r"([0-9a-fA-F]{2})");
-  DataType data_type;
+  DataType dataType;
 
-  HexFormatter(this.data_type);
+  HexFormatter(this.dataType);
 
   formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    if (this.data_type == DataType.hex) {
+    if (this.dataType == DataType.hex) {
       String newText = newValue.text.replaceAll(filter, '');
       newText = newText.replaceAllMapped(hexpair, (Match m) => m[1] + ' ');
       newText = newText.trimRight();
