@@ -102,10 +102,10 @@ class _MainState extends State<Main> with WidgetsBindingObserver {
 
       _cleanupTimer = Timer.periodic(Duration(seconds: 2), _cleanup);
     }
-
     _bleManager
         .startPeripheralScan(scanMode: ScanMode.balanced)
         .listen((ScanResult result) {
+      print(result);
       BleDevice device = BleDevice(result, DateTime.now());
       int index = _devices.indexWhere((dynamic _device) =>
           _device.result.peripheral.identifier ==
