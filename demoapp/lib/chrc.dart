@@ -131,14 +131,6 @@ class _ChrcState extends State<Chrc> {
       (_chrc.isNotifiable || _chrc.isIndicatable) ? buildNotify() : SizedBox(),
       Expanded(child: SizedBox()),
       Divider(height: 0),
-      Card(
-        child: Column(children: [
-          infobar(context, 'Service:', _chrc.service.uuid + service),
-          Divider(height: 0),
-          infobar(context, 'Characteristic:', _chrc.uuid + characteristic),
-        ]),
-        margin: EdgeInsets.all(0),
-      ),
     ]);
   }
 
