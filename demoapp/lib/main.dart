@@ -1,113 +1,287 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:circle_wave_progress/circle_wave_progress.dart';
+import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_ble_lib/flutter_ble_lib.dart';
+import 'package:location/location.dart';
+import 'srvc.dart';
+import 'chrc.dart';
+import 'assigned_numbers.dart';
+import 'widgets.dart';
 
-void main() {
-  runApp(MyApp());
+enum Connection { connecting, discovering }
+
+class BleDevice {
+  ScanResult result;
+  DateTime when;
+  BleDevice(this.result, this.when);
 }
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
-  @override
+void main() => runApp(App());
+
+class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'GATT the bugger',
+      home: Main(),
+      routes: {
+        '/srvc': (BuildContext context) => Srvc(),
+        '/chrc': (BuildContext context) => Chrc(),
+      },
+      theme: app_theme(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class Main extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _MainState createState() => _MainState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MainState extends State<Main> with WidgetsBindingObserver {
+  BleManager _bleManager = BleManager();
+  List<BleDevice> _devices = [];
+  Connection _connection = null;
+  StreamSubscription<PeripheralConnectionState> _conn_sub;
+  Timer _cleanup_timer;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if(ModalRoute.of(context).isCurrent) {
+      switch(state) {
+        case AppLifecycleState.paused: _stop_scan(); break;
+        case AppLifecycleState.resumed: _start_scan(); break;
+        case AppLifecycleState.inactive:
+        case AppLifecycleState.detached:
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addObserver(this);
+    initStateAsync();
+    super.initState();
+  }
+
+  Future<void> initStateAsync() async {
+    await assigned_numbers_load();
+    await _bleManager.createClient();
+    _start_scan();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stop_scan();
+    _bleManager.destroyClient();
+    super.dispose();
+  }
+
+  Future<void> _start_scan() async {
+    if(Platform.isAndroid) {
+      if(await _bleManager.bluetoothState() == BluetoothState.POWERED_OFF) {
+        await _bleManager.enableRadio();
+      }
+
+      AndroidDeviceInfo androidInfo = await DeviceInfoPlugin().androidInfo;
+      if(androidInfo.version.sdkInt >= 23) {
+        Location location = Location();
+        while(await location.hasPermission() != PermissionStatus.granted) {
+          await location.requestPermission();
+        }
+        if(! await location.serviceEnabled()) {
+          await location.requestService();
+        }
+      }
+
+      _cleanup_timer = Timer.periodic(Duration(seconds: 2), _cleanup);
+    }
+
+    _bleManager.startPeripheralScan(scanMode: ScanMode.balanced)
+      .listen((ScanResult result) {
+        BleDevice device = BleDevice(result, DateTime.now());
+        int index = _devices.indexWhere((dynamic _device) =>
+          _device.result.peripheral.identifier == device.result.peripheral.identifier);
+
+        setState(() {
+          if(index < 0) _devices.add(device);
+          else _devices[index] = device;
+        });
+      });
+  }
+
+  void _cleanup(Timer timer) {
+    DateTime limit = DateTime.now().subtract(Duration(seconds: 5));
+    for(int i = _devices.length - 1; i >= 0; i--) {
+      if(_devices[i].when.isBefore(limit)) setState(() => _devices.removeAt(i));
+    }
+  }
+
+  Future<void> _stop_scan() async {
+    await _cleanup_timer?.cancel();
+    await _bleManager.stopPeripheralScan();
+    setState(() => _devices.clear());
+  }
+
+  Future<void> _restart_scan() async {
+    if(Platform.isAndroid) {
+      setState(() => _devices.clear());
+    } else {
+      await _stop_scan();
+      _start_scan();
+    }
+  }
+
+  Future<void> _goto_device(int index) async {
+    ScanResult result = _devices[index].result;
+    _stop_scan();
+
+    try {
+      setState(() => _connection = Connection.connecting);
+      await result.peripheral.connect(refreshGatt: true, timeout: Duration(seconds: 15));
+      _conn_sub = result.peripheral.observeConnectionState(completeOnDisconnect: true)
+        .listen((PeripheralConnectionState state) {
+          if(state == PeripheralConnectionState.disconnected) {
+            Navigator.popUntil(context, ModalRoute.withName('/'));
+          }
+        });
+      await result.peripheral.requestMtu(251);
+
+      setState(() => _connection = Connection.discovering);
+      await result.peripheral.discoverAllServicesAndCharacteristics();
+
+      Navigator.pushNamed(context, '/srvc', arguments: result).whenComplete(() async {
+        _conn_sub?.cancel();
+        if(await result.peripheral.isConnected()) {
+          result.peripheral.disconnectOrCancelConnection();
+        }
+        setState(() => _connection = null);
+        _start_scan();
+      });
+    } on BleError {
+      _conn_sub?.cancel();
+      setState(() => _connection = null);
+      _start_scan();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('GATT the bugger'),
+        actions: [IconButton(
+          icon: Icon(Icons.refresh),
+          onPressed: _connection == null ? _restart_scan : null,
+        )],
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+      body: build_body(),
+    );
+  }
+
+  Widget build_body() {
+    if(_connection != null) {
+      switch(_connection) {
+        case Connection.connecting: return loader('Connecting ...', 'Wait while connecting');
+        case Connection.discovering: return loader('Connecting ...', 'Wait while discovering services');
+      }
+    }
+    if(_devices.length == 0) return build_intro();
+    return build_list();
+  }
+
+  Widget build_intro() {
+    final screen = MediaQuery.of(context).size;
+
+    return Column(
+      children: [
+        Stack(
+          children: [
+            Material(
+              child: CircleWaveProgress(
+                size: screen.width * .80,
+                borderWidth: 10.0,
+                backgroundColor: Colors.transparent,
+                borderColor: Colors.white,
+                waveColor: Colors.white70,
+                progress: 50,
+              ),
+              elevation: 3,
+              color: Colors.grey[200],
+              shape: CircleBorder(),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
+            Opacity(
+              child: Padding(
+                child: Icon(
+                  Icons.bluetooth_searching,
+                  color: Colors.indigo,
+                  size: screen.width / 2,
+                ),
+                padding: EdgeInsets.only(left: screen.width / 14),
+              ),
+              opacity: .90,
             ),
           ],
+          alignment: AlignmentDirectional.center,
         ),
+        Text(
+          'No BLE devices found',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 18, fontWeight: FontWeight.w500),
+        ),
+        Padding(
+          child: Text(
+            'Wait while looking for BLE devices.\nThis should take a few seconds.',
+            textAlign: TextAlign.center,
+            style: TextStyle(height: 1.4),
+          ),
+          padding: EdgeInsets.only(bottom: screen.height * .02),
+        ),
+      ],
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+    );
+  }
+
+  Widget build_list() {
+    return RefreshIndicator(
+      child: ListView.separated(
+        itemCount: _devices.length + 1,
+        itemBuilder: build_list_item,
+        separatorBuilder: (BuildContext context, int index) => Divider(height: 0),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      onRefresh: _restart_scan,
+    );
+  }
+
+  Widget build_list_item(BuildContext context, int index) {
+    if(index == 0) return infobar(context, 'BLE devices');
+
+    ScanResult result = _devices[index - 1].result;
+    String vendor = vendor_loopup(result.advertisementData.manufacturerData);
+    vendor = vendor != null ? '\n' + vendor : '';
+
+    return Card(
+      child: ListTile(
+        leading: Column(
+          children: [Text('${result.rssi.toString()} dB')],
+          mainAxisAlignment: MainAxisAlignment.center,
+        ),
+        title: result.peripheral.name != null
+          ? Text(result.peripheral.name)
+          : Text('Unnamed', style: TextStyle(color: Theme.of(context).textTheme.caption.color)),
+        subtitle: Text(result.peripheral.identifier + vendor, style: TextStyle(height: 1.35)),
+        trailing: Column(
+          children: [Icon(Icons.chevron_right)],
+          mainAxisAlignment: MainAxisAlignment.center,
+        ),
+        isThreeLine: vendor.length > 0,
+        onTap: () => _goto_device(index - 1),
+      ),
+      margin: EdgeInsets.all(0),
+      shape: RoundedRectangleBorder(),
     );
   }
 }

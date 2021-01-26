@@ -23,6 +23,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  circle_wave_progress: ^0.0.4
+  device_info: ^1.0.0
+  grizzly_io: ^2.2.2
+  location: ^3.2.4
+  flutter_ble_lib: ^2.3.1
+  shared_preferences: ^0.5.12+4
 
 
   # The following adds the Cupertino Icons font to your application.
