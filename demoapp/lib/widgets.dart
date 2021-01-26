@@ -37,7 +37,8 @@ Widget infobar(BuildContext context, String left, [String right]) {
 }
 
 Widget loader(String title, String subtitle) {
-  return Center(child: Card(
+  return Center(
+      child: Card(
     child: Padding(
       child: ListTile(
         leading: CircularProgressIndicator(),
@@ -59,17 +60,18 @@ class HexFormatter extends TextInputFormatter {
   HexFormatter(this.data_type);
 
   formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    if(this.data_type == DataType.hex) {
+    if (this.data_type == DataType.hex) {
       String newText = newValue.text.replaceAll(filter, '');
       newText = newText.replaceAllMapped(hexpair, (Match m) => m[1] + ' ');
       newText = newText.trimRight();
 
       int offset = newValue.selection.baseOffset;
-      if(oldValue.text.length < newValue.text.length) {
-        if(oldValue.text.length == newText.length) offset--;
-        else if(offset % 3 == 0) offset++;
-      } else if(oldValue.text.length > newValue.text.length) {
-        if(offset % 3 == 0) offset--;
+      if (oldValue.text.length < newValue.text.length) {
+        if (oldValue.text.length == newText.length)
+          offset--;
+        else if (offset % 3 == 0) offset++;
+      } else if (oldValue.text.length > newValue.text.length) {
+        if (offset % 3 == 0) offset--;
       }
 
       return TextEditingValue(

@@ -24,13 +24,14 @@ class _ChrcState extends State<Chrc> {
 
   @override
   Future<void> didChangeDependencies() async {
-    if(_result == null || _chrc == null) {
+    if (_result == null || _chrc == null) {
       List args = ModalRoute.of(context).settings.arguments;
       _result = args[0];
       _chrc = args[1];
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      setState(() => _data_type = DataType.values[prefs.getInt('data_type') ?? 0]);
+      setState(
+          () => _data_type = DataType.values[prefs.getInt('data_type') ?? 0]);
     }
     super.didChangeDependencies();
   }
@@ -50,32 +51,31 @@ class _ChrcState extends State<Chrc> {
   Future<void> _on_write() async {
     Uint8List data;
 
-    if(_data_type == DataType.hex) {
+    if (_data_type == DataType.hex) {
       List<int> hex_list = [];
-      for(int i=0; i<_write_ctrl.text.length; i+=3) {
-        hex_list.add(int.parse(_write_ctrl.text[i] + _write_ctrl.text[i+1], radix: 16));
+      for (int i = 0; i < _write_ctrl.text.length; i += 3) {
+        hex_list.add(int.parse(_write_ctrl.text[i] + _write_ctrl.text[i + 1],
+            radix: 16));
       }
       data = Uint8List.fromList(hex_list);
     } else {
       data = Uint8List.fromList(_write_ctrl.text.codeUnits);
     }
 
-    if(data.length > 0) {
+    if (data.length > 0) {
       _result.peripheral.writeCharacteristic(
-          _chrc.service.uuid, _chrc.uuid,
-          data, _chrc.isWritableWithResponse
-      );
+          _chrc.service.uuid, _chrc.uuid, data, _chrc.isWritableWithResponse);
     }
   }
 
   Future<void> _on_read() async {
-    CharacteristicWithValue data =
-      await _result.peripheral.readCharacteristic(_chrc.service.uuid, _chrc.uuid);
+    CharacteristicWithValue data = await _result.peripheral
+        .readCharacteristic(_chrc.service.uuid, _chrc.uuid);
 
-    if(_data_type == DataType.hex) {
+    if (_data_type == DataType.hex) {
       setState(() {
         _read_ctrl.text = '';
-        for(int hex in data.value) {
+        for (int hex in data.value) {
           _read_ctrl.text += hex.toRadixString(16).padLeft(2, '0').padRight(3);
         }
       });
@@ -85,13 +85,14 @@ class _ChrcState extends State<Chrc> {
   }
 
   Future<void> _on_notify() async {
-    if(_notify_sub == null) {
+    if (_notify_sub == null) {
       _notify_sub = _chrc.monitor().listen((Uint8List data) {
-        if(_data_type == DataType.hex) {
+        if (_data_type == DataType.hex) {
           setState(() {
             _notify_ctrl.text = '';
-            for(int hex in data) {
-              _notify_ctrl.text += hex.toRadixString(16).padLeft(2, '0').padRight(3);
+            for (int hex in data) {
+              _notify_ctrl.text +=
+                  hex.toRadixString(16).padLeft(2, '0').padRight(3);
             }
           });
         } else {
@@ -123,7 +124,9 @@ class _ChrcState extends State<Chrc> {
 
     return Column(children: [
       build_switches(),
-      (_chrc.isWritableWithResponse || _chrc.isWritableWithoutResponse) ? build_write() : SizedBox(),
+      (_chrc.isWritableWithResponse || _chrc.isWritableWithoutResponse)
+          ? build_write()
+          : SizedBox(),
       _chrc.isReadable ? build_read() : SizedBox(),
       (_chrc.isNotifiable || _chrc.isIndicatable) ? build_notify() : SizedBox(),
       Expanded(child: SizedBox()),
@@ -174,7 +177,8 @@ class _ChrcState extends State<Chrc> {
       child: Padding(
         child: Row(
           children: [
-            Expanded(child: TextField(
+            Expanded(
+                child: TextField(
               controller: _write_ctrl,
               style: TextStyle(fontFamily: 'monospace'),
               inputFormatters: [HexFormatter(_data_type)],
@@ -204,7 +208,8 @@ class _ChrcState extends State<Chrc> {
               onPressed: _on_read,
             ),
             SizedBox(width: 12),
-            Expanded(child: TextField(
+            Expanded(
+                child: TextField(
               controller: _read_ctrl,
               readOnly: true,
               style: TextStyle(fontFamily: 'monospace'),
@@ -229,7 +234,8 @@ class _ChrcState extends State<Chrc> {
               onPressed: _on_notify,
             ),
             SizedBox(width: 12),
-            Expanded(child: TextField(
+            Expanded(
+                child: TextField(
               controller: _notify_ctrl,
               readOnly: true,
               style: TextStyle(fontFamily: 'monospace'),

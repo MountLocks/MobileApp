@@ -10,13 +10,13 @@ class Srvc extends StatefulWidget {
 
 class _SrvcState extends State<Srvc> {
   ScanResult _result;
-  Map<Service,List<Characteristic>> _services = {};
+  Map<Service, List<Characteristic>> _services = {};
 
   @override
   Future<void> didChangeDependencies() async {
-    if(_result == null) {
+    if (_result == null) {
       _result = ModalRoute.of(context).settings.arguments;
-      for(Service service in await _result.peripheral.services()) {
+      for (Service service in await _result.peripheral.services()) {
         _services[service] = await service.characteristics();
       }
       setState(() => null);
@@ -46,7 +46,7 @@ class _SrvcState extends State<Srvc> {
   }
 
   Widget build_list_item(BuildContext context, int index) {
-    if(index == 0) return infobar(context, 'Services & characteristics');
+    if (index == 0) return infobar(context, 'Services & characteristics');
 
     String service = service_lookup(_services.keys.elementAt(index - 1).uuid);
 
@@ -58,20 +58,21 @@ class _SrvcState extends State<Srvc> {
       )
     ];
 
-    for(Characteristic chrc in _services.values.elementAt(index - 1)) {
+    for (Characteristic chrc in _services.values.elementAt(index - 1)) {
       String characteristic = characteristic_lookup(chrc.uuid);
       characteristic = characteristic != null ? characteristic + '\n' : '';
 
       List<String> props = [];
-      if(chrc.isWritableWithResponse) props.add('write');
-      if(chrc.isWritableWithoutResponse) props.add('write without response');
-      if(chrc.isReadable) props.add('read');
-      if(chrc.isNotifiable) props.add('notify');
-      if(chrc.isIndicatable) props.add('indicate');
+      if (chrc.isWritableWithResponse) props.add('write');
+      if (chrc.isWritableWithoutResponse) props.add('write without response');
+      if (chrc.isReadable) props.add('read');
+      if (chrc.isNotifiable) props.add('notify');
+      if (chrc.isIndicatable) props.add('indicate');
 
       tiles.add(ListTile(
         title: Text(chrc.uuid, style: TextStyle(fontSize: 15)),
-        subtitle: Text(characteristic + props.join(', '), style: TextStyle(height: 1.4)),
+        subtitle: Text(characteristic + props.join(', '),
+            style: TextStyle(height: 1.4)),
         trailing: Icon(Icons.chevron_right),
         isThreeLine: characteristic.length > 0,
         contentPadding: EdgeInsets.only(left: 28, right: 16),
