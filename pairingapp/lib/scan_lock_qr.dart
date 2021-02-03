@@ -13,16 +13,16 @@ class LockQRScannerView extends StatefulWidget {
 }
 
 class _LockQRScannerViewState extends State<LockQRScannerView> {
-  QRViewController controller;
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  QRViewController lockController;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'LockQR');
 
   @override
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      controller.pauseCamera();
+      lockController.pauseCamera();
     } else if (Platform.isIOS) {
-      controller.resumeCamera();
+      lockController.resumeCamera();
     }
   }
 
@@ -36,12 +36,12 @@ class _LockQRScannerViewState extends State<LockQRScannerView> {
           IconButton(
               icon: Icon(Icons.flash_on),
               onPressed: () async {
-                await controller?.toggleFlash();
+                await lockController?.toggleFlash();
               }),
           IconButton(
               icon: Icon(Icons.flip_camera_ios),
               onPressed: () async {
-                await controller?.flipCamera();
+                await lockController?.flipCamera();
               })
         ],
       ),
@@ -78,7 +78,7 @@ class _LockQRScannerViewState extends State<LockQRScannerView> {
 
   void _onQRViewCreated(QRViewController controller) {
     setState(() {
-      this.controller = controller;
+      this.lockController = controller;
     });
     controller.scannedDataStream.listen((scanData) async {
       await controller?.pauseCamera();
@@ -91,7 +91,7 @@ class _LockQRScannerViewState extends State<LockQRScannerView> {
 
   @override
   void dispose() {
-    controller?.dispose();
+    lockController?.dispose();
     super.dispose();
   }
 }

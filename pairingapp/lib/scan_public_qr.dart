@@ -13,16 +13,16 @@ class PublicQRScannerView extends StatefulWidget {
 }
 
 class _PublicQRScannerViewState extends State<PublicQRScannerView> {
-  QRViewController controller;
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  QRViewController publicController;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'PublicQR');
 
   @override
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      controller.pauseCamera();
+      publicController.pauseCamera();
     } else if (Platform.isIOS) {
-      controller.resumeCamera();
+      publicController.resumeCamera();
     }
   }
 
@@ -36,12 +36,12 @@ class _PublicQRScannerViewState extends State<PublicQRScannerView> {
           IconButton(
               icon: Icon(Icons.flash_on),
               onPressed: () async {
-                await controller?.toggleFlash();
+                await publicController?.toggleFlash();
               }),
           IconButton(
               icon: Icon(Icons.flip_camera_ios),
               onPressed: () async {
-                await controller?.flipCamera();
+                await publicController?.flipCamera();
               })
         ],
       ),
@@ -78,7 +78,7 @@ class _PublicQRScannerViewState extends State<PublicQRScannerView> {
 
   void _onQRViewCreated(QRViewController controller) {
     setState(() {
-      this.controller = controller;
+      this.publicController = controller;
     });
     List args = ModalRoute.of(context).settings.arguments;
     controller.scannedDataStream.listen((scanData) async {
@@ -92,7 +92,7 @@ class _PublicQRScannerViewState extends State<PublicQRScannerView> {
 
   @override
   void dispose() {
-    controller?.dispose();
+    publicController?.dispose();
     super.dispose();
   }
 }
