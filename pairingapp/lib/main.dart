@@ -39,6 +39,8 @@ class Main extends StatelessWidget {
       body: Container(
         alignment: Alignment.center,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text("Scan the QR Code on the Lock to Start"),
             ElevatedButton(

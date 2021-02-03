@@ -12,6 +12,8 @@ class LockScanned extends StatelessWidget {
       body: Container(
         alignment: Alignment.center,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text("Lock QR: {$args[0]}"),
             Text("Scan the QR Code on the Scooter to Continue"),
