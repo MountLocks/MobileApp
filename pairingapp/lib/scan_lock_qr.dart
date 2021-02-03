@@ -82,8 +82,8 @@ class _LockQRScannerViewState extends State<LockQRScannerView> {
     });
     controller.scannedDataStream.listen((scanData) async {
       await controller?.pauseCamera();
-      await Navigator.pushNamed(context, '/ble', arguments: [scanData.code])
-          .whenComplete(() async {
+      await Navigator.pushNamed(context, '/lockscanned',
+          arguments: [scanData.code]).whenComplete(() async {
         await controller?.resumeCamera();
       });
     });
