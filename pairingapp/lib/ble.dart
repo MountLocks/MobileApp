@@ -92,7 +92,7 @@ class _BLEScannerState extends State<BLEScanner> with WidgetsBindingObserver {
     _bleManager
         .startPeripheralScan(scanMode: ScanMode.balanced)
         .listen((ScanResult result) {
-      if (result.peripheral.name == args[0]) {
+      if (result.peripheral.identifier == args[0]) {
         BleDevice device = BleDevice(result, DateTime.now());
         int index = _devices.indexWhere((dynamic _device) =>
             _device.result.peripheral.identifier ==
@@ -136,7 +136,7 @@ class _BLEScannerState extends State<BLEScanner> with WidgetsBindingObserver {
   Future<void> _gotoDevice(int index) async {
     ScanResult result = _devices[index].result;
     _stopScan();
-
+    List args = ModalRoute.of(context).settings.arguments;
     try {
       setState(() => _connection = Connection.connecting);
       await result.peripheral
@@ -159,7 +159,8 @@ class _BLEScannerState extends State<BLEScanner> with WidgetsBindingObserver {
               in await service.characteristics()) {
             if (characteristic.uuid.contains('6e400002')) {
               Navigator.pushNamed(context, '/chrc',
-                  arguments: [result, characteristic]).whenComplete(() async {
+                      arguments: [result, characteristic, args[1]])
+                  .whenComplete(() async {
                 _connSub?.cancel();
                 if (await result.peripheral.isConnected()) {
                   result.peripheral.disconnectOrCancelConnection();

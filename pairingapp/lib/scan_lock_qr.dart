@@ -1,40 +1,18 @@
 import 'dart:io';
-import 'ble.dart';
-import 'srvc.dart';
-import 'chrc.dart';
-import 'widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
-void main() => runApp(App());
-
-class App extends StatelessWidget {
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mount Demo App',
-      debugShowCheckedModeBanner: false,
-      home: QRScannerView(),
-      routes: {
-        '/ble': (BuildContext context) => BLEScanner(),
-        '/srvc': (BuildContext context) => Srvc(),
-        '/chrc': (BuildContext context) => Chrc(),
-      },
-      theme: appTheme(),
-    );
-  }
-}
-
-class QRScannerView extends StatefulWidget {
-  const QRScannerView({
+class LockQRScannerView extends StatefulWidget {
+  const LockQRScannerView({
     Key key,
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _QRScannerViewState();
+  State<StatefulWidget> createState() => _LockQRScannerViewState();
 }
 
-class _QRScannerViewState extends State<QRScannerView> {
+class _LockQRScannerViewState extends State<LockQRScannerView> {
   QRViewController controller;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
 
@@ -53,7 +31,7 @@ class _QRScannerViewState extends State<QRScannerView> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text('Mount Demo App'),
+        title: Text('Mount Pairing App'),
         actions: [
           IconButton(
               icon: Icon(Icons.flash_on),
@@ -104,7 +82,7 @@ class _QRScannerViewState extends State<QRScannerView> {
     });
     controller.scannedDataStream.listen((scanData) async {
       await controller?.pauseCamera();
-      Navigator.pushNamed(context, '/ble', arguments: [scanData.code])
+      await Navigator.pushNamed(context, '/ble', arguments: [scanData.code])
           .whenComplete(() async {
         await controller?.resumeCamera();
       });
