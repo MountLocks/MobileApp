@@ -9,7 +9,11 @@ PODS:
     - Flutter
   - location (0.0.1):
     - Flutter
+  - MTBBarcodeScanner (5.0.11)
   - MultiplatformBleAdapter (0.1.7)
+  - qr_code_scanner (0.2.0):
+    - Flutter
+    - MTBBarcodeScanner
   - shared_preferences (0.0.1):
     - Flutter
 
@@ -19,10 +23,12 @@ DEPENDENCIES:
   - flutter_ble_lib (from `.symlinks/plugins/flutter_ble_lib/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - location (from `.symlinks/plugins/location/ios`)
+  - qr_code_scanner (from `.symlinks/plugins/qr_code_scanner/ios`)
   - shared_preferences (from `.symlinks/plugins/shared_preferences/ios`)
 
 SPEC REPOS:
   trunk:
+    - MTBBarcodeScanner
     - MultiplatformBleAdapter
 
 EXTERNAL SOURCES:
@@ -36,6 +42,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
   location:
     :path: ".symlinks/plugins/location/ios"
+  qr_code_scanner:
+    :path: ".symlinks/plugins/qr_code_scanner/ios"
   shared_preferences:
     :path: ".symlinks/plugins/shared_preferences/ios"
 
@@ -45,7 +53,9 @@ SPEC CHECKSUMS:
   flutter_ble_lib: 12143505774d055781b836052cf0b2c2a2257b0b
   integration_test: 5ed24a436eb7ec17b6a13046e9bf7ca4a404e59e
   location: 3a2eed4dd2fab25e7b7baf2a9efefe82b512d740
+  MTBBarcodeScanner: f453b33c4b7dfe545d8c6484ed744d55671788cb
   MultiplatformBleAdapter: 975cfb2a333b2c42b7a11628bd100ccb61872da2
+  qr_code_scanner: bb67d64904c3b9658ada8c402e8b4d406d5d796e
   shared_preferences: af6bfa751691cdc24be3045c43ec037377ada40d
 
 PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
