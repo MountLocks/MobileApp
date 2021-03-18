@@ -61,10 +61,6 @@ void setup()
   // Configure and Start BLE Uart Service
   bleuart.begin();
 
-  // Start BLE Battery Service
-  blebas.begin();
-  blebas.write(100);
-
   // Set up and start advertising
   startAdv();
 
