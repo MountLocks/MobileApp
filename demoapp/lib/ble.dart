@@ -153,24 +153,58 @@ class _BLEScannerState extends State<BLEScanner> with WidgetsBindingObserver {
       setState(() => _connection = Connection.discovering);
       await result.peripheral.discoverAllServicesAndCharacteristics();
 
-      for (Service service in await result.peripheral.services()) {
-        if (service.uuid.contains('ca9e')) {
-          for (Characteristic characteristic
-              in await service.characteristics()) {
-            if (characteristic.uuid.contains('6e400002')) {
-              Navigator.pushNamed(context, '/chrc',
-                  arguments: [result, characteristic]).whenComplete(() async {
-                _connSub?.cancel();
-                if (await result.peripheral.isConnected()) {
-                  result.peripheral.disconnectOrCancelConnection();
-                }
-                setState(() => _connection = null);
-                _startScan();
-              });
-            }
-          }
+      var key = new StringBuffer();
+
+      List<Service> services = await result.peripheral.services();
+
+      Service deviceInformationService =
+          services.firstWhere((service) => service.uuid.contains('180a'));
+
+      Service nordicUARTService =
+          services.firstWhere((service) => service.uuid.contains('ca9e'));
+
+      List<Characteristic> deviceInformationServiceCharacteristics =
+          await deviceInformationService.characteristics();
+
+      List<Characteristic> nordicUARTServiceCharacteristics =
+          await nordicUARTService.characteristics();
+
+      Characteristic manufacturerNameCharacteristic =
+          deviceInformationServiceCharacteristics.firstWhere(
+              (characteristic) => characteristic.uuid.contains("2a29"));
+
+      Characteristic serialNumberCharacteristic =
+          deviceInformationServiceCharacteristics.firstWhere(
+              (characteristic) => characteristic.uuid.contains("2a25"));
+
+      Characteristic saltCharacteristic =
+          nordicUARTServiceCharacteristics.firstWhere(
+              (characteristic) => characteristic.uuid.contains("6e400003"));
+
+      Characteristic rxCharacteristic =
+          nordicUARTServiceCharacteristics.firstWhere(
+              (characteristic) => characteristic.uuid.contains("6e400002"));
+
+      String manufacturerName =
+          String.fromCharCodes(await manufacturerNameCharacteristic.read());
+
+      String serialNumber =
+          String.fromCharCodes(await serialNumberCharacteristic.read());
+
+      String salt = String.fromCharCodes(await saltCharacteristic.read());
+
+      key.writeAll([manufacturerName, serialNumber], " ");
+
+      Navigator.pushNamed(context, '/chrc',
+              arguments: [result, rxCharacteristic, salt, key.toString()])
+          .whenComplete(() async {
+        _connSub?.cancel();
+        if (await result.peripheral.isConnected()) {
+          result.peripheral.disconnectOrCancelConnection();
         }
-      }
+        setState(() => _connection = null);
+        _startScan();
+      });
     } on BleError {
       _connSub?.cancel();
       setState(() => _connection = null);

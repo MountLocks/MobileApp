@@ -16,6 +16,8 @@ class Chrc extends StatefulWidget {
 class _ChrcState extends State<Chrc> {
   ScanResult _result;
   Characteristic _chrc;
+  String _salt;
+  String _key;
   DataType _dataType = DataType.hex;
   StreamSubscription<Uint8List> _notifySub;
   TextEditingController _writeCtrl = TextEditingController();
@@ -28,7 +30,10 @@ class _ChrcState extends State<Chrc> {
       List args = ModalRoute.of(context).settings.arguments;
       _result = args[0];
       _chrc = args[1];
-
+      _salt = args[2];
+      _key = args[3];
+      print(_salt);
+      print(_key);
       SharedPreferences prefs = await SharedPreferences.getInstance();
       setState(
           () => _dataType = DataType.values[prefs.getInt('data_type') ?? 0]);
