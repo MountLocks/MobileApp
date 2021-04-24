@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'assigned_numbers.dart';
 import 'widgets.dart';
 
+import 'package:encrypt/encrypt.dart' as encrypt;
+
 class Chrc extends StatefulWidget {
   @override
   _ChrcState createState() => _ChrcState();
@@ -32,8 +34,6 @@ class _ChrcState extends State<Chrc> {
       _chrc = args[1];
       _salt = args[2];
       _key = args[3];
-      print(_salt);
-      print(_key);
       SharedPreferences prefs = await SharedPreferences.getInstance();
       setState(
           () => _dataType = DataType.values[prefs.getInt('data_type') ?? 0]);
@@ -64,7 +64,14 @@ class _ChrcState extends State<Chrc> {
       }
       data = Uint8List.fromList(hexList);
     } else {
-      data = Uint8List.fromList(_writeCtrl.text.codeUnits);
+      final key = encrypt.Key.fromUtf8(_key);
+      final iv = encrypt.IV.fromUtf8(_salt);
+      final encrypter = encrypt.Encrypter(
+          encrypt.AES(key, mode: encrypt.AESMode.ctr, padding: null));
+
+      final encrypted = encrypter.encrypt(_writeCtrl.text, iv: iv);
+
+      data = encrypted.bytes;
     }
 
     if (data.length > 0) {
