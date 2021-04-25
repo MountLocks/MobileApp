@@ -195,9 +195,12 @@ class _BLEScannerState extends State<BLEScanner> with WidgetsBindingObserver {
 
       key.writeAll([manufacturerName, serialNumber], " ");
 
-      Navigator.pushNamed(context, '/chrc',
-              arguments: [result, rxCharacteristic, salt, key.toString()])
-          .whenComplete(() async {
+      Navigator.pushNamed(context, '/chrc', arguments: [
+        result,
+        rxCharacteristic,
+        salt,
+        key.toString().padRight(32, "0")
+      ]).whenComplete(() async {
         _connSub?.cancel();
         if (await result.peripheral.isConnected()) {
           result.peripheral.disconnectOrCancelConnection();
