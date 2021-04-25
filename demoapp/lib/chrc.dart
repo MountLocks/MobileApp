@@ -75,8 +75,7 @@ class _ChrcState extends State<Chrc> {
     }
 
     if (data.length > 0) {
-      _result.peripheral.writeCharacteristic(
-          _chrc.service.uuid, _chrc.uuid, data, _chrc.isWritableWithResponse);
+      await _chrc.write(data, _chrc.isWritableWithResponse);
     }
   }
 
